@@ -15,7 +15,7 @@
 import Foundation
 
 
-enum Retry {
+public enum Retry {
     public enum Error: Swift.Error, Equatable {
         case retryLimitExceeded(lastError: String?)
     }
