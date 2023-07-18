@@ -59,24 +59,6 @@ public protocol RetryLogger {
 }
 
 
-#if canImport(Logging)
-import Logging
-struct DefaultLogger: RetryLogger {
-    let logger: Logger
-
-    public init(logger: Logger) {
-        self.logger = logger
-    }
-
-    public func onStartOfRetry(label: String, attempt: Int) {
-        logger.info("\(label) (attempt \(attempt))")
-    }
-
-    public func onStartOfDelay(delay: Double) {
-        logger.info("Retrying in \(delay) seconds ...")
-    }
-}
-#else
 public struct DefaultLogger: RetryLogger {
     public init() { }
 
@@ -88,6 +70,5 @@ public struct DefaultLogger: RetryLogger {
         print("Retrying in \(delay) seconds ...")
     }
 }
-#endif
 
 
