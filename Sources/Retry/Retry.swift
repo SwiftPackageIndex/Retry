@@ -53,7 +53,7 @@ public enum Retry {
 }
 
 
-protocol RetryLogger {
+public protocol RetryLogger {
     func onStartOfRetry(label: String, attempt: Int)
     func onStartOfDelay(delay: Double)
 }
@@ -64,21 +64,27 @@ import Logging
 struct DefaultLogger: RetryLogger {
     let logger: Logger
 
-    func onStartOfRetry(label: String, attempt: Int) {
+    public init(logger: Logger) {
+        self.logger = logger
+    }
+
+    public func onStartOfRetry(label: String, attempt: Int) {
         logger.info("\(label) (attempt \(attempt))")
     }
 
-    func onStartOfDelay(delay: Double) {
+    public func onStartOfDelay(delay: Double) {
         logger.info("Retrying in \(delay) seconds ...")
     }
 }
 #else
-struct DefaultLogger: RetryLogger {
-    func onStartOfRetry(label: String, attempt: Int) {
+public struct DefaultLogger: RetryLogger {
+    public init() { }
+
+    public func onStartOfRetry(label: String, attempt: Int) {
         print("\(label) (attempt \(attempt))")
     }
 
-    func onStartOfDelay(delay: Double) {
+    public func onStartOfDelay(delay: Double) {
         print("Retrying in \(delay) seconds ...")
     }
 }
