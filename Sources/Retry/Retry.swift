@@ -27,13 +27,14 @@ public enum Retry {
     public static func attempt<T>(_ label: String,
                                   delay: Double = 5,
                                   retries: Int = 5,
+                                  logger: RetryLogger = DefaultLogger(),
                                   _ block: () throws -> T) throws -> T {
         var retriesLeft = retries
         var currentTry = 1
         var lastError: String?
         while true {
             if currentTry > 1 {
-                print("\(label) (attempt \(currentTry))")
+                logger.onStartOfRetry(label: label, attempt: currentTry)
             }
             do {
                 return try block()
@@ -41,7 +42,7 @@ public enum Retry {
                 lastError = "\(error)"
                 guard retriesLeft > 0 else { break }
                 let delay = backedOffDelay(baseDelay: delay, attempt: currentTry)
-                print("Retrying in \(delay) seconds ...")
+                logger.onStartOfDelay(delay: Double(delay))
                 sleep(delay)
                 currentTry += 1
                 retriesLeft -= 1
@@ -50,3 +51,37 @@ public enum Retry {
         throw Error.retryLimitExceeded(lastError: lastError)
     }
 }
+
+
+protocol RetryLogger {
+    func onStartOfRetry(label: String, attempt: Int)
+    func onStartOfDelay(delay: Double)
+}
+
+
+#if canImport(Logging)
+import Logging
+struct DefaultLogger: RetryLogger {
+    let logger: Logger
+
+    func onStartOfRetry(label: String, attempt: Int) {
+        logger.info("\(label) (attempt \(attempt))")
+    }
+
+    func onStartOfDelay(delay: Double) {
+        logger.info("Retrying in \(delay) seconds ...")
+    }
+}
+#else
+struct DefaultLogger: RetryLogger {
+    func onStartOfRetry(label: String, attempt: Int) {
+        print("\(label) (attempt \(attempt))")
+    }
+
+    func onStartOfDelay(delay: Double) {
+        print("Retrying in \(delay) seconds ...")
+    }
+}
+#endif
+
+
