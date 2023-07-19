@@ -39,6 +39,7 @@ public enum Retry {
             do {
                 return try block()
             } catch {
+                logger.onError(label: label, error: error)
                 lastError = "\(error)"
                 guard retriesLeft > 0 else { break }
                 let delay = backedOffDelay(baseDelay: delay, attempt: currentTry)
@@ -56,6 +57,7 @@ public enum Retry {
 public protocol RetryLogging {
     func onStartOfRetry(label: String, attempt: Int)
     func onStartOfDelay(label: String, delay: Double)
+    func onError(label: String, error: Error)
 }
 
 
@@ -68,6 +70,10 @@ public struct DefaultLogger: RetryLogging {
 
     public func onStartOfDelay(label: String, delay: Double) {
         print("Retrying in \(delay) seconds ...")
+    }
+
+    public func onError(label: String, error: Error) {
+        print(error)
     }
 }
 
