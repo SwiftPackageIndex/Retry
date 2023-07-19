@@ -27,7 +27,7 @@ public enum Retry {
     public static func attempt<T>(_ label: String,
                                   delay: Double = 5,
                                   retries: Int = 5,
-                                  logger: RetryLogger = DefaultLogger(),
+                                  logger: RetryLogging = DefaultLogger(),
                                   _ block: () throws -> T) throws -> T {
         var retriesLeft = retries
         var currentTry = 1
@@ -53,13 +53,13 @@ public enum Retry {
 }
 
 
-public protocol RetryLogger {
+public protocol RetryLogging {
     func onStartOfRetry(label: String, attempt: Int)
     func onStartOfDelay(label: String, delay: Double)
 }
 
 
-public struct DefaultLogger: RetryLogger {
+public struct DefaultLogger: RetryLogging {
     public init() { }
 
     public func onStartOfRetry(label: String, attempt: Int) {
