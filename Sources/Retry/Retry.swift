@@ -24,6 +24,7 @@ public enum Retry {
         (pow(2, max(0, attempt - 1)) * Decimal(baseDelay) as NSDecimalNumber).uint32Value
     }
 
+    @discardableResult
     public static func attempt<T>(_ label: String,
                                   delay: Double = 5,
                                   retries: Int = 5,
