@@ -52,6 +52,35 @@ public enum Retry {
         }
         throw Error.retryLimitExceeded(lastError: lastError)
     }
+
+    @discardableResult
+    public static func attempt<T>(_ label: String,
+                                  delay: Double = 5,
+                                  retries: Int = 5,
+                                  logger: RetryLogging = DefaultLogger(),
+                                  _ block: () async throws -> T) async throws -> T {
+        var retriesLeft = retries
+        var currentTry = 1
+        var lastError: String?
+        while true {
+            if currentTry > 1 {
+                logger.onStartOfRetry(label: label, attempt: currentTry)
+            }
+            do {
+                return try await block()
+            } catch {
+                logger.onError(label: label, error: error)
+                lastError = "\(error)"
+                guard retriesLeft > 0 else { break }
+                let delay = backedOffDelay(baseDelay: delay, attempt: currentTry)
+                logger.onStartOfDelay(label: label, delay: Double(delay))
+                sleep(delay)
+                currentTry += 1
+                retriesLeft -= 1
+            }
+        }
+        throw Error.retryLimitExceeded(lastError: lastError)
+    }
 }
 
 
