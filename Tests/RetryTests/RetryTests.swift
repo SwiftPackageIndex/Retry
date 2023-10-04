@@ -74,4 +74,18 @@ final class RetryTests: XCTestCase {
         XCTAssertEqual(called, 4)
     }
 
+    func test_attempt_async() async throws {
+        func dummyAsyncFunction() async { }
+        var called = 0
+
+        // MUT
+        try await Retry.attempt("", delay: 0, retries: 3) {
+            await dummyAsyncFunction()
+            called += 1
+        }
+
+        // validation
+        XCTAssertEqual(called, 1)
+    }
+
 }
