@@ -17,7 +17,7 @@ import Foundation
 
 public enum Retry {
     public enum Error: Swift.Error {
-        case abort(with: Swift.Error? = nil)
+        case abort(with: Swift.Error)
         case retryLimitExceeded(lastError: Swift.Error? = nil)
     }
 

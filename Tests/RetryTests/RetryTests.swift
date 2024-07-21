@@ -89,7 +89,7 @@ final class RetryTests: XCTestCase {
                 throw Retry.Error.abort(with: Error())
             }
             XCTFail("expected an error to be thrown")
-        } catch let Retry.Error.abort(with: .some(error)) {
+        } catch let Retry.Error.abort(with: error) {
             XCTAssertEqual("\(error)", "test error")
         } catch {
             XCTFail("unexpected error: \(error)")
