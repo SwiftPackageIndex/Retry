@@ -17,7 +17,8 @@ import Foundation
 
 public enum Retry {
     public enum Error: Swift.Error {
-        case retryLimitExceeded(lastError: Swift.Error?)
+        case abort(with: Swift.Error? = nil)
+        case retryLimitExceeded(lastError: Swift.Error? = nil)
     }
 
     public static func backedOffDelay(baseDelay: Double, attempt: Int) -> UInt32 {
@@ -39,6 +40,8 @@ public enum Retry {
             }
             do {
                 return try block()
+            } catch let Error.abort(with: error) {
+                throw Error.abort(with: error)
             } catch {
                 logger.onError(label: label, error: error)
                 lastError = error
@@ -68,6 +71,8 @@ public enum Retry {
             }
             do {
                 return try await block()
+            } catch let Error.abort(with: error) {
+                throw Error.abort(with: error)
             } catch {
                 logger.onError(label: label, error: error)
                 lastError = error
