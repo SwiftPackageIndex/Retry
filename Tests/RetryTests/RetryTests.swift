@@ -60,18 +60,43 @@ final class RetryTests: XCTestCase {
         }
 
         // MUT
-        XCTAssertThrowsError(
+        do {
             try Retry.attempt("", delay: 0, retries: 3) {
                 called += 1
                 throw Error()
             }
-
-        ) { error in
-            XCTAssertEqual(error as? Retry.Error, .retryLimitExceeded(lastError: "test error"))
+            XCTFail("expected an error to be thrown")
+        } catch let Retry.Error.retryLimitExceeded(lastError: .some(error)) {
+            XCTAssertEqual("\(error)", "test error")
+        } catch {
+            XCTFail("unexpected error: \(error)")
         }
 
         // validation
         XCTAssertEqual(called, 4)
+    }
+
+    func test_attempt_abort() throws {
+        var called = 0
+        struct Error: Swift.Error, CustomStringConvertible {
+            var description: String { "test error" }
+        }
+
+        // MUT
+        do {
+            try Retry.attempt("", delay: 0, retries: 3) {
+                called += 1
+                throw Retry.Error.abort(with: Error())
+            }
+            XCTFail("expected an error to be thrown")
+        } catch let Retry.Error.abort(with: error) {
+            XCTAssertEqual("\(error)", "test error")
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+
+        // validation
+        XCTAssertEqual(called, 1)
     }
 
     func test_attempt_async() async throws {

@@ -16,8 +16,9 @@ import Foundation
 
 
 public enum Retry {
-    public enum Error: Swift.Error, Equatable {
-        case retryLimitExceeded(lastError: String?)
+    public enum Error: Swift.Error {
+        case abort(with: Swift.Error)
+        case retryLimitExceeded(lastError: Swift.Error? = nil)
     }
 
     public static func backedOffDelay(baseDelay: Double, attempt: Int) -> UInt32 {
@@ -32,16 +33,18 @@ public enum Retry {
                                   _ block: () throws -> T) throws -> T {
         var retriesLeft = retries
         var currentTry = 1
-        var lastError: String?
+        var lastError: Swift.Error?
         while true {
             if currentTry > 1 {
                 logger.onStartOfRetry(label: label, attempt: currentTry)
             }
             do {
                 return try block()
+            } catch let Error.abort(with: error) {
+                throw Error.abort(with: error)
             } catch {
                 logger.onError(label: label, error: error)
-                lastError = "\(error)"
+                lastError = error
                 guard retriesLeft > 0 else { break }
                 let delay = backedOffDelay(baseDelay: delay, attempt: currentTry)
                 logger.onStartOfDelay(label: label, delay: Double(delay))
@@ -61,16 +64,18 @@ public enum Retry {
                                   _ block: () async throws -> T) async throws -> T {
         var retriesLeft = retries
         var currentTry = 1
-        var lastError: String?
+        var lastError: Swift.Error?
         while true {
             if currentTry > 1 {
                 logger.onStartOfRetry(label: label, attempt: currentTry)
             }
             do {
                 return try await block()
+            } catch let Error.abort(with: error) {
+                throw Error.abort(with: error)
             } catch {
                 logger.onError(label: label, error: error)
-                lastError = "\(error)"
+                lastError = error
                 guard retriesLeft > 0 else { break }
                 let delay = backedOffDelay(baseDelay: delay, attempt: currentTry)
                 logger.onStartOfDelay(label: label, delay: Double(delay))
