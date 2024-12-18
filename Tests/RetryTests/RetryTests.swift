@@ -29,7 +29,7 @@ final class RetryTests: XCTestCase {
         var called = 0
 
         // MUT
-        try Retry.attempt("", delay: 0, retries: 3) {
+        try Retry.attempt("", delay: 0, retries: 3) { currentTry in
             called += 1
         }
 
@@ -42,7 +42,8 @@ final class RetryTests: XCTestCase {
         struct Error: Swift.Error { }
 
         // MUT
-        try Retry.attempt("", delay: 0, retries: 3) {
+        try Retry.attempt("", delay: 0, retries: 3) { currentTry in
+            XCTAssertEqual(currentTry, called)
             called += 1
             if called < 3 {
                 throw Error()
@@ -61,7 +62,7 @@ final class RetryTests: XCTestCase {
 
         // MUT
         do {
-            try Retry.attempt("", delay: 0, retries: 3) {
+            try Retry.attempt("", delay: 0, retries: 3) { currentTry in
                 called += 1
                 throw Error()
             }
@@ -84,7 +85,7 @@ final class RetryTests: XCTestCase {
 
         // MUT
         do {
-            try Retry.attempt("", delay: 0, retries: 3) {
+            try Retry.attempt("", delay: 0, retries: 3) { currentTry in
                 called += 1
                 throw Retry.Error.abort(with: Error())
             }
@@ -104,7 +105,7 @@ final class RetryTests: XCTestCase {
         var called = 0
 
         // MUT
-        try await Retry.attempt("", delay: 0, retries: 3) {
+        try await Retry.attempt("", delay: 0, retries: 3) { currentTry in
             await dummyAsyncFunction()
             called += 1
         }

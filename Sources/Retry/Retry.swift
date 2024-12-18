@@ -30,23 +30,23 @@ public enum Retry {
                                   delay: Double = 5,
                                   retries: Int = 5,
                                   logger: RetryLogging = DefaultLogger(),
-                                  _ block: () throws -> T) throws -> T {
+                                  _ block: (Int) throws -> T) throws -> T {
         var retriesLeft = retries
-        var currentTry = 1
+        var currentTry = 0
         var lastError: Swift.Error?
         while true {
-            if currentTry > 1 {
+            if currentTry > 0 {
                 logger.onStartOfRetry(label: label, attempt: currentTry)
             }
             do {
-                return try block()
+                return try block(currentTry)
             } catch let Error.abort(with: error) {
                 throw Error.abort(with: error)
             } catch {
                 logger.onError(label: label, error: error)
                 lastError = error
                 guard retriesLeft > 0 else { break }
-                let delay = backedOffDelay(baseDelay: delay, attempt: currentTry)
+                let delay = backedOffDelay(baseDelay: delay, attempt: currentTry + 1)
                 logger.onStartOfDelay(label: label, delay: Double(delay))
                 sleep(delay)
                 currentTry += 1
@@ -61,23 +61,23 @@ public enum Retry {
                                   delay: Double = 5,
                                   retries: Int = 5,
                                   logger: RetryLogging = DefaultLogger(),
-                                  _ block: () async throws -> T) async throws -> T {
+                                  _ block: (Int) async throws -> T) async throws -> T {
         var retriesLeft = retries
-        var currentTry = 1
+        var currentTry = 0
         var lastError: Swift.Error?
         while true {
-            if currentTry > 1 {
+            if currentTry > 0 {
                 logger.onStartOfRetry(label: label, attempt: currentTry)
             }
             do {
-                return try await block()
+                return try await block(currentTry)
             } catch let Error.abort(with: error) {
                 throw Error.abort(with: error)
             } catch {
                 logger.onError(label: label, error: error)
                 lastError = error
                 guard retriesLeft > 0 else { break }
-                let delay = backedOffDelay(baseDelay: delay, attempt: currentTry)
+                let delay = backedOffDelay(baseDelay: delay, attempt: currentTry + 1)
                 logger.onStartOfDelay(label: label, delay: Double(delay))
                 sleep(delay)
                 currentTry += 1
