@@ -25,13 +25,13 @@ public enum Retry {
         (pow(2, max(0, attempt - 1)) * Decimal(baseDelay) as NSDecimalNumber).uint32Value
     }
 
-    struct State {
-        var retriesLeft: Int
-        var currentTry = 0
-        var lastError: Swift.Error?
+    public struct State {
+        public var retriesLeft: Int
+        public var currentTry = 0
+        public var lastError: Swift.Error?
 
-        var isFirstIteration: Bool { currentTry == 0 }
-        var hasRetriesLeft: Bool { retriesLeft > 0 }
+        public var isFirstIteration: Bool { currentTry == 0 }
+        public var hasRetriesLeft: Bool { retriesLeft > 0 }
         mutating func advance() {
             currentTry += 1
             retriesLeft -= 1
@@ -43,14 +43,14 @@ public enum Retry {
                                   delay: Double = 5,
                                   retries: Int = 5,
                                   logger: RetryLogging = DefaultLogger(),
-                                  _ block: (Int) throws -> T) throws -> T {
+                                  _ block: () throws -> T) throws -> T {
         var state = State(retriesLeft: retries)
         while true {
             if !state.isFirstIteration {
                 logger.onStartOfRetry(label: label, attempt: state.currentTry)
             }
             do {
-                return try block(state.currentTry)
+                return try block()
             } catch let Error.abort(with: error) {
                 throw Error.abort(with: error)
             } catch {
@@ -67,14 +67,62 @@ public enum Retry {
                                   delay: Double = 5,
                                   retries: Int = 5,
                                   logger: RetryLogging = DefaultLogger(),
-                                  _ block: (Int) async throws -> T) async throws -> T {
+                                  _ block: () async throws -> T) async throws -> T {
         var state = State(retriesLeft: retries)
         while true {
             if !state.isFirstIteration {
                 logger.onStartOfRetry(label: label, attempt: state.currentTry)
             }
             do {
-                return try await block(state.currentTry)
+                return try await block()
+            } catch let Error.abort(with: error) {
+                throw Error.abort(with: error)
+            } catch {
+                if catchHandler(label, delay: delay, logger: logger, error: error, state: &state) {
+                    break
+                }
+            }
+        }
+        throw Error.retryLimitExceeded(lastError: state.lastError)
+    }
+
+    @discardableResult
+    public static func attempt<T>(_ label: String,
+                                  delay: Double = 5,
+                                  retries: Int = 5,
+                                  logger: RetryLogging = DefaultLogger(),
+                                  _ block: (State) throws -> T) throws -> T {
+        var state = State(retriesLeft: retries)
+        while true {
+            if !state.isFirstIteration {
+                logger.onStartOfRetry(label: label, attempt: state.currentTry)
+            }
+            do {
+                return try block(state)
+            } catch let Error.abort(with: error) {
+                throw Error.abort(with: error)
+            } catch {
+                if catchHandler(label, delay: delay, logger: logger, error: error, state: &state) {
+                    break
+                }
+            }
+        }
+        throw Error.retryLimitExceeded(lastError: state.lastError)
+    }
+
+    @discardableResult
+    public static func attempt<T>(_ label: String,
+                                  delay: Double = 5,
+                                  retries: Int = 5,
+                                  logger: RetryLogging = DefaultLogger(),
+                                  _ block: (State) async throws -> T) async throws -> T {
+        var state = State(retriesLeft: retries)
+        while true {
+            if !state.isFirstIteration {
+                logger.onStartOfRetry(label: label, attempt: state.currentTry)
+            }
+            do {
+                return try await block(state)
             } catch let Error.abort(with: error) {
                 throw Error.abort(with: error)
             } catch {

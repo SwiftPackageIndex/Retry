@@ -42,8 +42,24 @@ final class RetryTests: XCTestCase {
         struct Error: Swift.Error { }
 
         // MUT
-        try Retry.attempt("", delay: 0, retries: 3) { currentTry in
-            XCTAssertEqual(currentTry, called)
+        try Retry.attempt("", delay: 0, retries: 3) {
+            called += 1
+            if called < 3 {
+                throw Error()
+            }
+        }
+
+        // validation
+        XCTAssertEqual(called, 3)
+    }
+
+    func test_attempt_state() throws {
+        var called = 0
+        struct Error: Swift.Error { }
+
+        // MUT
+        try Retry.attempt("", delay: 0, retries: 3) { state in
+            XCTAssertEqual(state.currentTry, called)
             called += 1
             if called < 3 {
                 throw Error()
